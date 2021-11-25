@@ -1,3 +1,25 @@
    15  history | grep docker > commands.txt 
    15  history | grep docker > commands.txt 
    18  history | grep docker >> commands.txt 
+   14  cd git/
+   17  man git
+   18  man git-satus
+   19  man git-status
+   20  git-status
+   21  apt-cache search git-status
+   22  git status
+   23  git switch main
+   24  git switch -c main origin/main
+   25  git fetch origin/main
+   26  git fetch main
+   27  git branch -m master main
+   28  git push -u origin main
+   29  git pull
+   31  git push -u origin main
+   32  git pull origin main
+   33  git pull origin main --allow-unrelated-histories
+   35  git branch -m master main
+   36  git add .
+   37  git push -u origin main
+   38  git remote set-head origin main
+   40  history | grep git >> commands.txt 
