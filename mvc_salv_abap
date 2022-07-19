@@ -1,0 +1,92 @@
+INTERFACE lif_model.
+  METHODS:
+    get_table_ref RETURNING VALUE(r_ref) TYPE REF TO data.
+ENDINTERFACE.
+
+CLASS lcx_salv_err DEFINITION INHERITING FROM cx_static_check.
+ENDCLASS.
+
+CLASS lcl_display DEFINITION.
+  PUBLIC SECTION.
+    METHODS:
+      display_data RAISING lcx_salv_err,
+      set_model IMPORTING i_model TYPE REF TO lif_model.
+  PROTECTED SECTION.
+    METHODS:
+      setup_salv RAISING lcx_salv_err.
+    DATA: salv  TYPE REF TO cl_salv_table,
+          model TYPE REF TO lif_model.
+**********************************************************************
+    DATA: salv_init TYPE abap_bool.
+ENDCLASS.
+
+CLASS lcl_display IMPLEMENTATION.
+  METHOD display_data.
+    IF salv_init EQ abap_false.
+      me->setup_salv( ).
+*      CATCH lcx_salv_err.
+    ENDIF.
+    salv->display( ).
+  ENDMETHOD.
+  METHOD setup_salv.
+    DATA(ref) = model->get_table_ref( ).
+    ASSIGN ref->* TO FIELD-SYMBOL(<table>).
+    TRY.
+        cl_salv_table=>factory(
+          IMPORTING
+            r_salv_table   = salv                          " Basisklasse einfache ALV Tabellen
+          CHANGING
+            t_table        = <table>
+        ).
+      CATCH cx_salv_msg. " ALV: Allg. Fehlerklasse  mit Meldung
+    ENDTRY.
+  ENDMETHOD.
+  METHOD set_model.
+    model = i_model.
+  ENDMETHOD.
+ENDCLASS.
+
+CLASS lcl_model DEFINITION.
+  PUBLIC SECTION.
+    INTERFACES:
+      lif_model.
+    ALIASES: get_table_ref FOR lif_model~get_table_ref.
+    METHODS:
+      read_data IMPORTING i_range TYPE REF TO data,
+      constructor.
+  PROTECTED SECTION.
+    DATA: result TYPE REF TO data.
+ENDCLASS.
+
+CLASS lcl_model IMPLEMENTATION.
+  METHOD read_data.
+    FIELD-SYMBOLS: <range> TYPE ANY TABLE.
+    ASSIGN i_range->* TO <range>.
+**********************************************************************
+    SELECT FROM scarr
+         FIELDS *
+          WHERE carrid IN @<range>
+           INTO TABLE @DATA(result_).
+    CREATE DATA result LIKE result_.
+    ASSIGN result->* TO FIELD-SYMBOL(<result>).
+    <result> = result_.
+  ENDMETHOD.
+  METHOD get_table_ref.
+    r_ref = result.
+  ENDMETHOD.
+  METHOD constructor.
+  ENDMETHOD.
+ENDCLASS.
+
+DATA: carrid TYPE scarr-carrid.
+SELECT-OPTIONS: so_car FOR carrid.
+
+START-OF-SELECTION.
+  DATA(model) = NEW lcl_model( ).
+  model->read_data( i_range = REF #( so_car[] ) ).
+  DATA(display) = NEW lcl_display( ).
+  display->set_model( model ).
+  TRY.
+      display->display_data( ).
+    CATCH lcx_salv_err.
+  ENDTRY.
